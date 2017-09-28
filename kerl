@@ -504,6 +504,9 @@ maybe_patch_darwin()
         CFLAGS="-DERTS_DO_INCL_GLB_INLINE_FUNC_DEF"
         apply_darwin_compiler_patch >> "$LOGFILE"
     fi
+    if [ "$1" -ge 17 ]; then
+        apply_darwin_ded_ldflags_patch >> "$LOGFILE"
+    fi
 }
 
 maybe_patch_sunos()
@@ -1475,6 +1478,26 @@ apply_r15_beam_makeops_patch()
  
      if ($prev_last && !is_instr($prev_last, 'fail')) {
  	error("Line $line: A previous transformation shadows '$orig_transform'");
+_END_PATCH
+}
+
+#Based on https://github.com/idyll/otp/commit/a9367aa77ca5579d92c7e47af37f3373f541f1da.diff
+apply_darwin_ded_ldflags_patch()
+{
+    patch -p1 <<'_END_PATCH'
+diff --git a/erts/configure.in b/erts/configure.in
+index b3fe48d62..337bac3bd 100644
+--- a/erts/configure.in
++++ b/erts/configure.in
+@@ -3820,7 +3820,7 @@ case $host_os in
+	darwin*)
+		# Mach-O linker: a shared lib and a loadable
+		# object file is not the same thing.
+-		DED_LDFLAGS="-bundle -flat_namespace -undefined suppress"
++		DED_LDFLAGS="-bundle -bundle_loader ${ERL_TOP}/bin/$host/beam.smp"
+		case $ARCH in
+			amd64)
+				DED_LDFLAGS="-m64 $DED_LDFLAGS"
 _END_PATCH
 }
 
